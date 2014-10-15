@@ -1,0 +1,241 @@
+on fs
+# mount mtd partitions
+
+
+on post-fs
+# Add by Mtk
+
+
+on post-fs-data
+
+#
+# MT6620 related device nodes & configuration (begin)
+#
+
+#/dev/ttyMT2 for MT6620 BT/FM/GPS usage
+    chmod 0660 /dev/ttyMT2
+    chown system system /dev/ttyMT2
+
+#LGE_CHANGE : 2012-10-23 [kyeongdon.kim@lge.com] block the useless code to improve boot time
+# Turn off MT6620 by default
+#    chmod 0664 /sys/class/rfkill/rfkill0/state
+ #   chown system system /sys/class/rfkill/rfkill0/state
+#    write sys/class/rfkill/rfkill0/state 0
+
+
+# STP, WMT, GPS, FM and BT Driver
+    insmod /system/lib/modules/mtk_wmt_detect.ko
+#    insmod /system/lib/modules/mtk_hif_sdio.ko
+#    insmod /system/lib/modules/mtk_stp_wmt.ko
+#    insmod /system/lib/modules/mtk_stp_uart.ko
+#    insmod /system/lib/modules/mtk_stp_gps.ko
+#    insmod /system/lib/modules/mtk_stp_bt.ko
+#    insmod /system/lib/modules/mtk_fm_drv.ko
+#    insmod /system/lib/modules/mtk_fm_priv.ko
+#    insmod /system/lib/modules/mtk_wmt_wifi.ko
+
+# Create char device file for WMT, GPS, BT, FM, WIFI
+    mknod /dev/stpwmt c 190 0;
+    mknod /dev/stpgps c 191 0;
+    mknod /dev/stpbt  c 192 0;
+
+    chmod 0660 /dev/stpwmt
+    chown system system /dev/stpwmt
+ 
+    mknod /dev/wmtWifi c 153 0
+    chmod 0660 /dev/wmtWifi
+    chown system system /dev/wmtWifi
+    chown media media /dev/msm_IRRC_pcm_dec
+    chmod 0660 /dev/msm_IRRC_pcm_dec
+
+# BT
+    chmod 0660 /dev/stpbt
+    chown bluetooth radio /dev/stpbt
+
+# GPS
+    chown gps gps /dev/stpgps
+    chown gps gps /sys/class/gpsdrv/gps/pwrctl
+    chown gps gps /sys/class/gpsdrv/gps/suspend
+    chown gps gps /sys/class/gpsdrv/gps/state
+    chown gps gps /sys/class/gpsdrv/gps/pwrsave
+    chown gps gps /sys/class/gpsdrv/gps/status
+    chmod 0660 /dev/stpgps
+
+# WiFi
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wpa_supplicant 0770 wifi wifi
+    chown wifi wifi /data/misc/wifi
+
+#USB
+    #LGE_CHANGE_S : USB Autorun function. sangchul1.park@lge.com
+    chown system system /sys/class/android_usb/android0/f_ecm/ethaddr
+    chmod 0664 /sys/class/android_usb/android0/f_ecm/ethaddr
+    chown system system /sys/class/android_usb/android0/f_cdrom_storage/lun/cdrom_file
+    chmod 0664 /sys/class/android_usb/android0/f_cdrom_storage/lun/cdrom_file
+    chown system system /sys/class/android_usb/android0/f_cdrom_storage/lun/cdrom_usbmode
+    chmod 0664 /sys/class/android_usb/android0/f_cdrom_storage/lun/cdrom_usbmode
+    chown system system /system/usbautorun.iso
+    #LGE_CHANGE_E : USB Autorun function.
+
+#Disable for one Single loader
+# Load WiFi Driver
+#    insmod /system/lib/modules/wlan.ko
+# Remove for one binary
+
+# Char device for BT 3.0 HS
+    mknod /dev/ampc0 c 151 0
+    chown bluetooth bluetooth /dev/ampc0
+    chmod 0660 /dev/ampc0
+
+#
+# MT6620 related device nodes & configuration (end)
+#
+
+# Encrypt phone function
+    setprop vold.post_fs_data_done 1
+
+on boot
+    # Refer to http://source.android.com/devices/tech/storage/index.html
+    # It said, "Starting in Android 4.4, multiple external storage devices are surfaced to developers through 
+    #           Context.getExternalFilesDirs(), Context.getExternalCacheDirs(), and Context.getObbDirs().
+    #           External storage devices surfaced through these APIs must be a semi-permanent part of the device (such as an SD card slot in a battery compartment).
+    #           Developers expect data stored in these locations to be available over long periods of time."
+    # Therefore, if the target has the SD card slot in a battery compartment, we need to specify SECONDARY_STORAGE (*** UN-Comment the following command ***)
+    # 
+    # export SECONDARY_STORAGE /storage/sdcard1
+
+#
+# MT6620 related services (Begin)
+#
+
+service wmt_loader  /system/bin/logwrapper /system/bin/wmt_loader
+	class core
+	user root
+	group root
+	oneshot
+	
+service 662x_launcher /system/bin/logwrapper /system/bin/6620_launcher -b 4000000 -p /system/etc/firmware/ -d /dev/ttyMT2
+    user system
+    group system
+    class core
+
+service wlanLoader /system/bin/wlan_loader
+    user root
+    group root
+    class main
+    oneshot
+
+
+#service stp_dump /system/bin/stp_dump3
+#    user system
+#    group system net_admin
+#    class main
+#   oneshot
+
+# LGE_CHANGE_S Log Service [start]
+# main log
+service logcat-main /system/bin/logcat -v time -b main -f /data/logger/main.log -n 4 -r 4096
+    class main
+    disabled
+    oneshot
+
+on property:persist.service.main.enable=1
+    start logcat-main
+
+on property:persist.service.main.enable=0
+    stop logcat-main
+
+# system log
+service logcat-system /system/bin/logcat -v time -b system -f /data/logger/system.log -n 4 -r 4096
+    class main
+    disabled
+    oneshot
+
+on property:persist.service.system.enable=1
+    start logcat-system
+
+on property:persist.service.system.enable=0
+    stop logcat-system
+
+# radio log
+service logcat-radio /system/bin/logcat -v time -b radio -f /data/logger/radio.log -n 4 -r 4096
+    class main
+    disabled
+    oneshot
+
+on property:persist.service.radio.enable=1
+    start logcat-radio
+
+on property:persist.service.radio.enable=0
+    stop logcat-radio
+
+# event log
+service logcat-events /system/bin/logcat -v time -b events -f /data/logger/events.log -n 4 -r 4096
+    class main
+    disabled
+    oneshot
+
+on property:persist.service.events.enable=1
+    start logcat-events
+
+on property:persist.service.events.enable=0
+    stop logcat-events
+
+# kernel log
+service log-kernel /system/bin/sh /etc/save_kernel_log.sh
+    class main
+    disabled
+    oneshot
+
+on property:persist.service.kernel.enable=1
+    start log-kernel
+
+on property:persist.service.kernel.enable=0
+    stop log-kernel
+
+# kernel log monitoring
+# if kernel.log>50MB, make kernel_1.log and restart log-kernel
+service log-kerneld /system/bin/klogd
+    class main
+    disabled
+
+on property:persist.service.kernel.enable=1
+    start log-kerneld
+# LGE_CHANGE_E Log Service [END]
+
+#
+# MT6620 related services (End)
+#
+# LGE_CHANGE_S : 20121211 johny.kim@lge.com add LGE cpu boost for app speed
+on property:sys.cpufreq.config=hybrid
+    chmod 0660 /sys/devices/system/cpu/cpufreq/hybrid/boostpulse
+    chown root system /sys/devices/system/cpu/cpufreq/hybrid/boostpulse
+    chmod 0660 /sys/devices/system/cpu/cpufreq/hybrid/boosttime
+    chown root system /sys/devices/system/cpu/cpufreq/hybrid/boosttime
+    chmod 0660 /sys/devices/system/cpu/cpufreq/hybrid/boostfreq
+    chown root system /sys/devices/system/cpu/cpufreq/hybrid/boostfreq
+# LGE_CHANGE_E : 20121211 johny.kim@lge.com add LGE cpu boost for app speed
+# LGE_BSP_LGBM : LGE_CHANGE_E 2014-02-24 hyunjun.park@lge.com
+on charger
+	write /proc/mtk_hotplug/enable 0
+	write /sys/devices/system/cpu/cpu1/online 0
+	write /sys/power/cpufreq_limited_freq 6
+    start charger
+service charger /sbin/chargerlogo
+    class charger
+# LGE_BSP_LGBM : LGE_CHANGE_E 2014-02-24 hyunjun.park@lge.com
+
+service irrcServer /system/bin/irrcServer
+    class main
+    user media
+    group media
+    onrestart restart irrcServer
+
+on init
+    setprop ro.ssbd.session /persist-lg/encryption/eksst
+    setprop ro.ssbd.offset 0
+
+service ssbd /system/bin/ssbd
+    class main
+    socket ssbd stream 0660 root mount

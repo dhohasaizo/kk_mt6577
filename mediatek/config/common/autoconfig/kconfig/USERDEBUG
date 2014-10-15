@@ -1,0 +1,11 @@
+# ftrace
+#
+CONFIG_MTK_SCHED_TRACERS=y
+
+#
+# Kernel hacking
+#
+
+# MET
+CONFIG_MTK_MET=y
+CONFIG_MTK_MET_PLF=y

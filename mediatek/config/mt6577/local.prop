@@ -1,0 +1,8 @@
+log.tag.Mms=VERBOSE
+log.tag.Mms:app=VERBOSE
+log.tag.Mms:threadcache=VERBOSE
+log.tag.Mms:transaction=VERBOSE
+log.tag.Mms:thumbnailcache=VERBOSE
+log.tag.Mms:pducache=VERBOSE
+log.tag.Mms:widget=VERBOSE
+log.tag.Mms:contact=VERBOSE

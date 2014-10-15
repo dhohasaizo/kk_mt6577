@@ -1,0 +1,76 @@
+
+menu "LGE Board Selection"
+
+config MACH_LGE
+	bool "lge machine"
+	default y
+
+config MACH_LGE_V3
+	bool "lge machine v3"
+	default n
+	depends on MACH_LGE
+
+config MACH_LGE_V5
+	bool "lge machine v5"
+	default n
+	depends on MACH_LGE
+
+menu "LGE Device-Specific Changes"
+
+config LGE_HANDLE_PANIC
+	bool "LGE Crash Handler Feature"
+	default n
+	depends on MACH_LGE
+
+config LGE_HIDDEN_RESET # 20121118, lge silent reset bk.seol@lge.com
+	bool "LGE HIDDEN RESET Feature"
+	default n
+	depends on MACH_LGE && LGE_HANDLE_PANIC
+	help
+	  Enable support for LGE hidden reset. For turn on this feature
+	  "echo 1 > /sys/module/lge_handle_panic/parameters/hreset_enable"
+	  or "lge_handle_panic.hreset_enable=1" from cmdline
+
+config LGE_BOOTLOADER_LOG
+	tristate "Support LGE bootloader log"
+	default n
+	depends on MACH_LGE
+	help
+	  LGE bootloader log
+
+config LGE_HYBRID_CPU_BOOST
+	tristate "Support LGE hybrid cpu boost"
+	default n
+	depends on MACH_LGE
+	help
+	  LGE boost cpu freq on hybrid mode
+
+endmenu # menu "LGE Device-Specific Changes"
+
+menu "LGE DRIVERS"
+
+
+endmenu # menu "LGE DRIVERS"
+
+menu "LGE USB GADGET DRIVER "
+
+config LGE_USB_GADGET_DRIVER
+	bool "Android Gadget for LGE United Driver"
+	default y
+
+config LGE_USB_AUTORUN_DRIVER
+	bool "Android Gadget for LGE Autorun Driver"
+	default y	
+
+endmenu #menu "LGE USB GADGET DRIVER "
+
+menu "LGE Secure Clock"
+config RTC_INTF_SECCLK  # 20120918, yeonsoo7.kim@lge.com
+        bool "Android secure clock driver"
+        depends on MTK_RTC
+        default n
+        help
+          Driver for supporting Android secure clock
+endmenu #menu "LGE Secure Clock"
+
+endmenu #menu "LGE Board Selection"

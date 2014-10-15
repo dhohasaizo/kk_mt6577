@@ -1,0 +1,54 @@
+# MTK project .rc configure 
+
+	
+#
+# NO SHARED_SDCARD feature option
+#
+
+on init
+#    # See storage config details at http://source.android.com/tech/storage/
+#    mkdir /mnt/media_rw/sdcard0 0700 media_rw media_rw
+#    #mkdir /mnt/media_rw/sdcard1 0700 media_rw media_rw
+#    mkdir /mnt/media_rw/external_SD 0700 media_rw media_rw
+#    mkdir /storage/sdcard0 0700 root root
+#    #mkdir /storage/sdcard1 0700 root root
+#    mkdir /storage/external_SD 0700 root root
+#
+#    export SECONDARY_STORAGE /storage/external_SD
+#    export EXTERNAL_STORAGE /storage/sdcard0
+#
+#    # Support legacy paths
+#    symlink /storage/sdcard0 /sdcard
+#    symlink /storage/sdcard0 /mnt/sdcard
+#    #symlink /storage/sdcard1 /mnt/sdcard2
+#    symlink /storage/external_SD /mnt/sdcard2
+#    symlink /mnt/sdcard2 /storage/external_SD
+on post-fs
+    # mount shared so changes propagate into child namespaces
+    mount rootfs rootfs / shared rec
+    mount tmpfs tmpfs /mnt/secure private rec
+    
+on fs
+    setprop ro.crypto.fuse_sdcard true
+
+#service fuse_sdcard0 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard0 /storage/sdcard0
+#    class late_start
+#    disabled
+service sdcard /system/bin/sdcard -u 1023 -g 1023 -l /data/media /mnt/shell/emulated
+    class late_start
+    
+#service fuse_sdcard1 /system/bin/sdcard -u 1023 -g 1023 -w 1023 -d /mnt/media_rw/sdcard1 /storage/sdcard1
+service fuse_external_SD /system/bin/sdcard -u 1023 -g 1023 -w 1023 -d /mnt/media_rw/external_SD /storage/external_SD
+    class late_start
+    disabled
+on property:ro.fuse_sdcard=true
+    start sdcard
+
+# Binding fuse mount point to /storage/emulated/legacy
+ on property:init.svc.sdcard=running
+    wait /mnt/shell/emulated/0
+    mount none /mnt/shell/emulated/0 /storage/emulated/legacy bind
+
+# This will make sure that sdcard service starts as late_start.
+on nonencrypted
+    setprop ro.fuse_sdcard ${persist.fuse_sdcard}

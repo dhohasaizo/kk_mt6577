@@ -1,0 +1,19 @@
+#
+# Near Field Communication (NFC) devices
+#
+
+menu "Near Field Communication (NFC) devices"
+    depends on LGE_NFC
+
+config MTK_NFC_INSIDE
+    bool "MICROREAD driver"
+    depends on I2C
+    default N
+    ---help---
+    Say yes if you want MICROREAD Near Field Communication driver.
+    This is for i2c connected version. If unsure, say N here.
+
+    To compile this driver as a module, choose m here. The module will
+    be called microread.
+
+endmenu

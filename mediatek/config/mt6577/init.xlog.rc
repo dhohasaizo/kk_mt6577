@@ -1,0 +1,64 @@
+#
+# XLOG service configuration
+#
+service xlogboot /system/bin/xlog boot
+    user root
+    oneshot
+    disabled
+
+service xlogdebugchanged /system/bin/xlog debug-changed
+    user root
+    oneshot
+    disabled
+
+on property:persist.mtk.aee.mode=1
+    start xlogdebugchanged
+
+on property:persist.mtk.aee.mode=2
+    start xlogdebugchanged
+
+on property:persist.mtk.aee.mode=3
+    start xlogdebugchanged
+
+on property:persist.mtk.aee.mode=4
+    start xlogdebugchanged
+
+on property:init.svc.adbd=running
+    start xlogdebugchanged
+
+on property:init.svc.adbd=stopped
+    start xlogdebugchanged
+
+# LGE_CHANGE_S, [Data_Patch_027] [data-lab2@lge.com], 2011-04-28 <Packet Capture Support in Log Service>
+on post-fs-data
+    mkdir /data/logger 0771 system system
+    chown system system /data/logger
+    chmod 0771 /data/logger
+
+service log-packet /system/xbin/tcpdump -i any -p -C 4 -W 25 -Z root -s 0 -w /data/logger/packet.pcap
+    disabled
+    oneshot
+
+on property:persist.service.packet.enable=1
+    start log-packet
+
+on property:persist.service.packet.enable=0
+    stop log-packet
+# LGE_CHANGE_E, [Data_Patch_027] [data-lab2@lge.com], 2011-04-28 <Packet Capture Support in Log Service>
+
+# Set Xlog On/Off for LGE HiddenMenu
+service xlogon /system/bin/xlog filter-reset
+    user root
+    oneshot
+    disabled
+
+service xlogoff /system/bin/xlog filter-set off+verbose/off+verbose/off
+    user root
+    oneshot
+    disabled
+
+on property:persist.service.xlog.enable=1
+    start xlogon
+
+on property:persist.service.xlog.enable=0
+    start xlogoff
